@@ -6,16 +6,23 @@
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: transparent;
+            background: transparent;
             margin: 0;
             padding: 15px;
         }
-        .paivyri-box {
-            background: #ffffff;
-            border-radius: 8px;
-            padding: 20px;
+        .sivu-kontti {
+            display: flex;
+            gap: 25px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+        .laatikko {
+            background: transparent;
+            border: none;
             box-shadow: none;
-            max-width: 350px;
+            padding: 0;
+            width: 300px; /* Kiinteä, kompakti leveys vastaamaan aiempia laatikoita */
+            box-sizing: border-box;
         }
         .rivi {
             margin-bottom: 12px;
@@ -53,31 +60,95 @@
             margin-top: 4px;
             text-align: right;
         }
+        .tieto-lohko {
+            margin-bottom: 20px;
+        }
+        .tieto-lohko:last-child {
+            margin-bottom: 0;
+        }
+        .tieto-otsikko {
+            font-size: 15px;
+            font-weight: bold;
+            color: #201f1e;
+            margin-bottom: 6px;
+        }
+        .tieto-teksti {
+            font-size: 13px;
+            color: #323130;
+            line-height: 1.4;
+        }
+        .tieto-teksti a {
+            color: #0078d4;
+            text-decoration: none;
+        }
+        .tieto-teksti a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
 
-<div class="paivyri-box">
-    <div class="rivi">
-        <span class="viikonpaiva" id="viikonpaiva"></span> | 
-        <span class="paivamaara" id="paivamaara"></span>
-    </div>
-    
-    <div class="rivi">
-        <span class="viikkonumero" id="viikkonumero"></span>
-    </div>
-
-    <div class="rivi">
-        Kello:
-        <span class="kellonaika" id="kellonaika">00:00:00</span>
-    </div>
-
-    <div class="rivi">
-        Vuodesta kulunut:
-        <div class="progress">
-            <div class="progress-bar" id="vuosi-bar"></div>
+<div class="sivu-kontti">
+    <!-- Vasen puoli: Alkuperäinen päivämäärä- ja kellonaikaosio -->
+    <div class="laatikko">
+        <div class="rivi">
+            <span class="viikonpaiva" id="viikonpaiva"></span> | 
+            <span class="paivamaara" id="paivamaara"></span>
         </div>
-        <span class="progress-label" id="vuosi-label">0 %</span>
+        
+        <div class="rivi">
+            <span class="viikkonumero" id="viikkonumero"></span>
+        </div>
+
+        <div class="rivi">
+            Kello:
+            <span class="kellonaika" id="kellonaika">00:00:00</span>
+        </div>
+
+        <div class="rivi" style="margin-bottom: 0;">
+            Vuodesta kulunut:
+            <div class="progress">
+                <div class="progress-bar" id="vuosi-bar"></div>
+            </div>
+            <span class="progress-label" id="vuosi-label">0 %</span>
+        </div>
+    </div>
+
+    <!-- Keskiosa: Nimipäivät sekä Auringon ja kuun vaiheet -->
+    <div class="laatikko">
+        <div class="tieto-lohko">
+            <div class="tieto-otsikko">Suomalaiset nimipäivät</div>
+            <div class="tieto-teksti">
+                <a href="https://info.paivyri.fi/nimihaku/?fname=Aila&country=fi" target="_blank">Aila</a> ja 
+                <a href="https://info.paivyri.fi/nimihaku/?fname=Aili&country=fi" target="_blank">Aili</a>.
+            </div>
+        </div>
+
+        <div class="tieto-lohko">
+            <div class="tieto-otsikko">Auringon ja kuun vaiheet</div>
+            <div class="tieto-teksti">
+                <div>☀️ Auringon nousu: <b>07:03</b></div>
+                <div>🌇 Auringon lasku: <b>19:47</b></div>
+                <div>🌙 Kuun vaihe: <b>Kasvava sirppi</b></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Oikea puoli: Historialliset tapahtumat -->
+    <div class="laatikko">
+        <div class="tieto-lohko">
+            <div class="tieto-otsikko">Historialliset tapahtumat</div>
+            <div class="tieto-teksti">
+                <div style="margin-bottom: 6px;">
+                    <b>35 vuotta sitten (17.9.1991):</b><br>
+                    YK hyväksyi uusiksi jäsenikseen Viron, Latvian, Liettuan, Mikronesian, Marshallinsaaret sekä Etelä- ja Pohjois-Korean.
+                </div>
+                <div>
+                    <b>38 vuotta sitten (17.9.1988):</b><br>
+                    Olympialaiset Soulissa 17.9.–2.10.1988.
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
