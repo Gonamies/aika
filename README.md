@@ -1,6 +1,4 @@
-# aika
-näyttää ajan
 
-[kalenterisivustoni](https://gonamies.github.io/aika/test.html)
+[Kalenteri](https://gonamies.github.io/aika/Kalenteri.html)
 
-[kalenterisivustoni](https://gonamies.github.io/aika/test.html)
+[Pvm](https://gonamies.github.io/aika/Pvm.html)
