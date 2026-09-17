@@ -4,25 +4,25 @@
     <meta charset="UTF-8">
     <title>Dynaaminen vuosikalenteri pyhilla</title>
     <style>
-        /* A4 tulostusasetukset: pakottaa vaaka-A4 ja pienet reunukset */
-        @page {
-            size: A4 landscape;
-            margin: 8mm;
-        }
+        /* Perusasetukset ruudulle */
         body {
             font-family: Arial, sans-serif;
             background-color: #ffffff;
             color: #000000;
             margin: 0;
-            padding: 5px;
+            padding: 10px;
         }
+
         .kalenteri-container {
             display: flex;
             justify-content: space-between;
             gap: 10px;
-            max-width: 100%;
+            width: 100%;
             margin: 0 auto;
+            /* Skaalaa kalenteria suuremmaksi ruudulla siististi vasemmasta reunasta */
+            zoom: 1.5;
         }
+
         .vuosi-box {
             flex: 1;
             border-right: 1px solid #ccc;
@@ -66,6 +66,15 @@
             font-weight: bold;
             font-size: 8.5px;
         }
+        
+        /* Viikkonumeroiden otsikko (Vk) ja solut vasemmalle */
+        th:first-child, td:first-child {
+            text-align: left !important;
+			font-weight: bold;
+            padding-left: 3px;
+			width: 11px; /* Kokeile tarvittaessa pienempää tai isompaa arvoa (esim. 18px - 25px) */
+        }
+
         .pyha {
             color: red;
         }
@@ -78,8 +87,30 @@
             line-height: 1.5;
             color: #333;
             min-height: 24px;
-			margin-left: 2px; /* Varmistaa että lista alkaa aivan vasemmasta reunasta */
-			text-align: left;  /* Pakottaa tekstin tasaantumaan vasemmalle */
+            margin-left: 3px; /* Sijoittuu samaan linjaan viikkonumeroiden kanssa */
+            text-align: left;  /* Pakottaa pyhälistauksen vasemmalle */
+        }
+
+        /* TULOSTUSASETUKSET: Nollaa zoomauksen tulostukseen, jotta A4 pysyy täydellisenä */
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 8mm;
+            }
+            body {
+                padding: 5px;
+				/* Pakottaa selaimen tulostamaan värit täsmälleen niin kuin ne on määritelty */
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;				
+            }
+            .kalenteri-container {
+                zoom: 1 !important;
+                width: 100% !important;
+            }
+            /* Varmistetaan, että muu-kuu säilyy vaaleana myös paperilla */
+            .muu-kuu {
+                color: #aaa !important; /* Voit kokeilla vielä vaaleampaa, esim. #e0e0e0 */
+            }
         }
     </style>
 </head>
@@ -98,7 +129,6 @@
     const viikonPaivat = ["Vk", "MA", "TI", "KE", "TO", "PE", "LA", "SU"];
     const pvLyhenteet = ["su", "ma", "ti", "ke", "to", "pe", "la"];
 
-    // Apufunktio pääsiäisen laskemiseen (Gaussin algoritmi)
     function haePaasiainen(vuosi) {
         const a = vuosi % 19;
         const b = Math.floor(vuosi / 100);
@@ -117,7 +147,6 @@
         return new Date(vuosi, kuukausi, paiva);
     }
 
-    // Viikkonumeron laskenta
     function haeViikkoNumero(d) {
         d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
         d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
@@ -126,14 +155,12 @@
         return viikkoNro;
     }
 
-    // Tarkistus onko päivä pyhäpäivä ja palauttaa pyhän nimen tai null
     function haePyhanNimi(pvm) {
         const v = pvm.getFullYear();
         const kk = pvm.getMonth(); 
         const p = pvm.getDate();
         const pv = pvm.getDay(); 
 
-        // Kiinteät pyhät
         if (kk === 0 && p === 1) return "Uudenvuodenpäivä";
         if (kk === 0 && p === 6) return "Loppiainen";
         if (kk === 4 && p === 1) return "Vappu";
@@ -141,39 +168,29 @@
         if (kk === 11 && p === 25) return "Joulupäivä";
         if (kk === 11 && p === 26) return "Tapaninpäivä";
 
-        // Liikkuvat pyhät
         const paasiainen = haePaasiainen(v);
         
-        // Pitkäperjantai (-2 päivää pääsiäisestä)
         const pitkaPerjantai = new Date(paasiainen);
         pitkaPerjantai.setDate(paasiainen.getDate() - 2);
         if (kk === pitkaPerjantai.getMonth() && p === pitkaPerjantai.getDate()) return "Pitkäperjantai";
 
-        // Pääsiäispäivä
         if (kk === paasiainen.getMonth() && p === paasiainen.getDate()) return "Pääsiäispäivä";
 
-        // Pääsiäismaanantai (+1 päivä)
         const paasiainenMaanantai = new Date(paasiainen);
         paasiainenMaanantai.setDate(paasiainen.getDate() + 1);
         if (kk === paasiainenMaanantai.getMonth() && p === paasiainenMaanantai.getDate()) return "Pääsiäismaanantai";
 
-        // Helatorstai (+39 päivää pääsiäisestä)
         const helatorstai = new Date(paasiainen);
         helatorstai.setDate(paasiainen.getDate() + 39);
         if (kk === helatorstai.getMonth() && p === helatorstai.getDate()) return "Helatorstai";
 
-        // Juhannusaatto (perjantai kesäkuun 19. ja 25. päivän välillä)
         if (kk === 5 && p >= 19 && p <= 25 && pv === 5) return "Juhannusaatto";
-        // Juhannuspäivä (lauantai kesäkuun 20. ja 26. päivän välillä)
         if (kk === 5 && p >= 20 && p <= 26 && pv === 6) return "Juhannuspäivä";
-
-        // Pyhäinpäivä (lauantai lokakuun 31. ja marraskuun 6. päivän välillä)
         if (kk === 10 && p >= 1 && p <= 7 && pv === 6) return "Pyhäinpäivä";
 
         return null;
     }
 
-    // Yleinen tarkistus onko päivä pyhä (mukaan lukien sunnuntait taulukon värjäystä varten)
     function onkoPyha(pvm) {
         if (pvm.getDay() === 0) return true;
         return haePyhanNimi(pvm) !== null;
@@ -209,7 +226,7 @@
             let viikkoNroStr = String(viikkoNro).padStart(2, '0');
 
             html += `<tr>`;
-            html += `<td style="color: #666; font-size: 8.5px;">${viikkoNro}</td>`;
+            html += `<td style="font-size: 9px;">${viikkoNro}</td>`;
 
             for (let j = 0; j < 7; j++) {
                 let solunTeksti = "";
