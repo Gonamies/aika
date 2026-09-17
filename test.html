@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <title>Päiväystiedot</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f3f2f1;
+            color: #323130;
+            margin: 0;
+            padding: 15px;
+        }
+        .paivyri-box {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 350px;
+        }
+        .rivi {
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        .viikonpaiva {
+            font-weight: bold;
+            color: #0078d4;
+        }
+        .kellonaika {
+            font-size: 24px;
+            font-weight: bold;
+            color: #201f1e;
+            display: block;
+            margin-top: 5px;
+        }
+        /* Edistymispalkin tyylit */
+        .progress {
+            background-color: #edebe9;
+            border-radius: 4px;
+            height: 12px;
+            width: 100%;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .progress-bar {
+            background-color: #0078d4;
+            height: 100%;
+            width: 0%;
+        }
+        .progress-label {
+            font-size: 12px;
+            color: #605e5c;
+            display: block;
+            margin-top: 4px;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+
+<div class="paivyri-box">
+    <div class="rivi">
+        <span class="viikonpaiva" id="viikonpaiva"></span> | 
+        <span class="paivamaara" id="paivamaara"></span>
+    </div>
+    
+    <div class="rivi">
+        <span class="viikkonumero" id="viikkonumero"></span>
+    </div>
+
+    <div class="rivi">
+        Kello:
+        <span class="kellonaika" id="kellonaika">00:00:00</span>
+    </div>
+
+    <div class="rivi">
+        Vuodesta kulunut:
+        <div class="progress">
+            <div class="progress-bar" id="vuosi-bar"></div>
+        </div>
+        <span class="progress-label" id="vuosi-label">0 %</span>
+    </div>
+</div>
+
+<script>
+    function paivitaTiedot() {
+        const nyt = new Date();
+
+        // 1. Viikonpäivä, päivämäärä ja viikkonumero suomeksi
+        const viikonpaivat = ['Sunnuntai', 'Maanantai', 'Tiistai', 'Keskiviikko', 'Torstai', 'Perjantai', 'Lauantai'];
+        document.getElementById('viikonpaiva').innerText = viikonpaivat[nyt.getDay()];
+        
+        const paivaAsetukset = { day: 'numeric', month: 'numeric', year: 'numeric' };
+        document.getElementById('paivamaara').innerText = nyt.toLocaleDateString('fi-FI', paivaAsetukset);
+
+        // Viikkonumeron laskenta
+        const alkuVuosi = new Date(nyt.getFullYear(), 0, 1);
+        const viikkoNro = Math.ceil((((nyt - alkuVuosi) / 86400000) + alkuVuosi.getDay() + 1) / 7);
+        document.getElementById('viikkonumero').innerText = `Viikkonumero ${viikkoNro}.`;
+
+        // 2. Kellonaika
+        document.getElementById('kellonaika').innerText = nyt.toLocaleTimeString('fi-FI');
+
+        // 3. Vuoden eteneminen
+        const vuosi = nyt.getFullYear();
+        const alkaa = new Date(vuosi, 0, 1);
+        const paattyy = new Date(vuosi + 1, 0, 1);
+        const kulunutAika = nyt - alkaa;
+        const kokoVuosi = paattyy - alkaa;
+        const prosentti = (kulunutAika / kokoVuosi) * 100;
+
+        document.getElementById('vuosi-bar').style.width = prosentti.toFixed(2) + '%';
+        document.getElementById('vuosi-label').innerText = prosentti.toFixed(2) + ' %';
+    }
+
+    // Päivitä heti ja sen jälkeen joka sekunti
+    paivitaTiedot();
+    setInterval(paivitaTiedot, 1000);
+</script>
+
+</body>
+</html>
