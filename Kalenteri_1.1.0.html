@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <title>Dynaaminen vuosikalenteri pyhilla</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            color: #000000;
+            margin: 20px;
+        }
+        .kalenteri-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+        .vuosi-box {
+            flex: 1;
+            border-right: 2px solid #ccc;
+            padding-right: 20px;
+        }
+        .vuosi-box:last-child {
+            border-right: none;
+            padding-right: 0;
+        }
+        .vuosi-otsikko {
+            text-align: center;
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .kuukaudet-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+        .kuukausi {
+            font-size: 11px;
+            margin-bottom: 15px;
+        }
+        .kuukausi-nimi {
+            text-align: center;
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+        }
+        th, td {
+            padding: 2px 0;
+            font-size: 11px;
+        }
+        th {
+            font-weight: bold;
+        }
+        .pyha {
+            color: red;
+        }
+        .muu-kuu {
+            color: #aaa;
+        }
+        .pyha-lista {
+            margin-top: 4px;
+            font-size: 9.5px;
+            line-height: 1.3;
+            color: #333;
+            min-height: 35px; /* Pitää asettelun siistinä, vaikka kuukaudessa ei olisi pyhiä */
+        }
+    </style>
+</head>
+<body>
+
+<div class="kalenteri-container" id="kalenteriContainer">
+    <!-- Kalenteri generoituu dynaamisesti JavaScriptillä -->
+</div>
+
+<script>
+    const kuukaudetNimet = [
+        "Tammikuu", "Helmikuu", "Maaliskuu", "Huhtikuu", "Toukokuu", "Kesäkuu",
+        "Heinäkuu", "Elokuu", "Syyskuu", "Lokakuu", "Marraskuu", "Joulukuu"
+    ];
+
+    const viikonPaivat = ["Vk", "MA", "TI", "KE", "TO", "PE", "LA", "SU"];
+    const pvLyhenteet = ["su", "ma", "ti", "ke", "to", "pe", "la"];
+
+    // Apufunktio pääsiäisen laskemiseen (Gaussin algoritmi)
+    function haePaasiainen(vuosi) {
+        const a = vuosi % 19;
+        const b = Math.floor(vuosi / 100);
+        const c = vuosi % 100;
+        const d = Math.floor(b / 4);
+        const e = b % 4;
+        const f = Math.floor((b + 8) / 25);
+        const g = Math.floor((b - f + 1) / 3);
+        const h = (19 * a + b - d - g + 15) % 30;
+        const i = Math.floor(c / 4);
+        const k = c % 4;
+        const l = (32 + 2 * e + 2 * i - h - k) % 7;
+        const m = Math.floor((a + 11 * h + 22 * l) / 451);
+        const kuukausi = Math.floor((h + l - 7 * m + 114) / 31) - 1;
+        const paiva = ((h + l - 7 * m + 114) % 31) + 1;
+        return new Date(vuosi, kuukausi, paiva);
+    }
+
+    // Viikkonumeron laskenta
+    function haeViikkoNumero(d) {
+        d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+        var vuosiAlku = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        var viikkoNro = Math.ceil((((d - vuosiAlku) / 86400000) + 1) / 7);
+        return viikkoNro;
+    }
+
+    // Tarkistus onko päivä pyhäpäivä ja palauttaa pyhän nimen tai null
+    function haePyhanNimi(pvm) {
+        const v = pvm.getFullYear();
+        const kk = pvm.getMonth(); 
+        const p = pvm.getDate();
+        const pv = pvm.getDay(); 
+
+        // Kiinteät pyhät
+        if (kk === 0 && p === 1) return "Uudenvuodenpäivä";
+        if (kk === 0 && p === 6) return "Loppiainen";
+        if (kk === 4 && p === 1) return "Vappu";
+        if (kk === 11 && p === 6) return "Itsenäisyyspäivä";
+        if (kk === 11 && p === 25) return "Joulupäivä";
+        if (kk === 11 && p === 26) return "Tapaninpäivä";
+
+        // Liikkuvat pyhät
+        const paasiainen = haePaasiainen(v);
+        
+        // Pitkäperjantai (-2 päivää pääsiäisestä)
+        const pitkaPerjantai = new Date(paasiainen);
+        pitkaPerjantai.setDate(paasiainen.getDate() - 2);
+        if (kk === pitkaPerjantai.getMonth() && p === pitkaPerjantai.getDate()) return "Pitkäperjantai";
+
+        // Pääsiäispäivä
+        if (kk === paasiainen.getMonth() && p === paasiainen.getDate()) return "Pääsiäispäivä";
+
+        // Pääsiäismaanantai (+1 päivä)
+        const paasiainenMaanantai = new Date(paasiainen);
+        paasiainenMaanantai.setDate(paasiainen.getDate() + 1);
+        if (kk === paasiainenMaanantai.getMonth() && p === paasiainenMaanantai.getDate()) return "Pääsiäismaanantai";
+
+        // Helatorstai (+39 päivää pääsiäisestä)
+        const helatorstai = new Date(paasiainen);
+        helatorstai.setDate(paasiainen.getDate() + 39);
+        if (kk === helatorstai.getMonth() && p === helatorstai.getDate()) return "Helatorstai";
+
+        // Juhannusaatto (perjantai kesäkuun 19. ja 25. päivän välillä)
+        if (kk === 5 && p >= 19 && p <= 25 && pv === 5) return "Juhannusaatto";
+        // Juhannuspäivä (lauantai kesäkuun 20. ja 26. päivän välillä)
+        if (kk === 5 && p >= 20 && p <= 26 && pv === 6) return "Juhannuspäivä";
+
+        // Pyhäinpäivä (lauantai lokakuun 31. ja marraskuun 6. päivän välillä)
+        if (kk === 10 && p >= 1 && p <= 7 && pv === 6) return "Pyhäinpäivä";
+
+        return null;
+    }
+
+    // Yleinen tarkistus onko päivä pyhä (mukaan lukien sunnuntait taulukon värjäystä varten)
+    function onkoPyha(pvm) {
+        if (pvm.getDay() === 0) return true;
+        return haePyhanNimi(pvm) !== null;
+    }
+
+    function luoKuuTaulukkoJaPyhat(vuosi, kkIndex) {
+        const ekaPaiva = new Date(vuosi, kkIndex, 1);
+        const vikaPaiva = new Date(vuosi, kkIndex + 1, 0);
+        
+        let aloitusPaiva = ekaPaiva.getDay() - 1;
+        if (aloitusPaiva === -1) aloitusPaiva = 6;
+
+        let html = `<table><tr>`;
+        viikonPaivat.forEach(pv => {
+            html += `<th>${pv}</th>`;
+        });
+        html += `</tr>`;
+
+        let paivaLaskuri = 1;
+        let edellisenVika = new Date(vuosi, kkIndex, 0).getDate();
+        let pyhatRivit = [];
+        
+        for (let i = 0; i < 6; i++) {
+            if (paivaLaskuri > vikaPaiva.getDate() && i > 0) break;
+
+            let viikkoPvm;
+            if (i === 0) {
+                viikkoPvm = new Date(vuosi, kkIndex, 1);
+            } else {
+                viikkoPvm = new Date(vuosi, kkIndex, paivaLaskuri);
+            }
+            let viikkoNro = haeViikkoNumero(viikkoPvm);
+            // Muotoillaan viikkonumero kaksinumeroisena (esim. 01)
+            let viikkoNroStr = String(viikkoNro).padStart(2, '0');
+
+            html += `<tr>`;
+            html += `<td style="color: #666; font-size: 10px;">${viikkoNro}</td>`;
+
+            for (let j = 0; j < 7; j++) {
+                let solunTeksti = "";
+                let luokka = "";
+                let pvmObj;
+
+                if (i === 0 && j < aloitusPaiva) {
+                    let pvn = edellisenVika - (aloitusPaiva - 1 - j);
+                    solunTeksti = pvn;
+                    luokka = "muu-kuu";
+                } else if (paivaLaskuri <= vikaPaiva.getDate()) {
+                    pvmObj = new Date(vuosi, kkIndex, paivaLaskuri);
+                    solunTeksti = paivaLaskuri;
+                    
+                    // Tarkistetaan onko kyseessä virallinen arkipyhä (ei pelkkä sunnuntai listaukseen)
+                    let pyhanNimi = haePyhanNimi(pvmObj);
+                    if (pyhanNimi !== null) {
+                        let pvStr = pvLyhenteet[pvmObj.getDay()];
+                        let pvaStr = String(pvmObj.getDate()).padStart(2, '0');
+                        pyhatRivit.join
+                        pyhatRivit.push(`${viikkoNroStr} - ${pvStr} ${pvaStr} - ${pyhanNimi}`);
+                    }
+
+                    if (onkoPyha(pvmObj)) {
+                        luokka = "pyha";
+                    }
+                    paivaLaskuri++;
+                } else {
+                    let pvn = paivaLaskuri - vikaPaiva.getDate();
+                    solunTeksti = pvn;
+                    luokka = "muu-kuu";
+                    paivaLaskuri++;
+                }
+
+                html += `<td class="${luokka}">${solunTeksti}</td>`;
+            }
+            html += `</tr>`;
+        }
+        html += `</table>`;
+
+        // Rakennetaan kuukauden alle tuleva pyhäpäivien lista
+        let pyhaHtml = `<div class="pyha-lista">`;
+        if (pyhatRivit.length > 0) {
+            pyhaHtml += pyhatRivit.join("<br>");
+        }
+        pyhaHtml += `</div>`;
+
+        return { taulukko: html, pyhat: pyhaHtml };
+    }
+
+    function renderöiKalenteri() {
+        const kuluvaVuosi = new Date().getFullYear();
+        const vuodet = [kuluvaVuosi - 1, kuluvaVuosi, kuluvaVuosi + 1];
+        const container = document.getElementById("kalenteriContainer");
+        
+        let htmlContent = "";
+
+        vuodet.forEach(vuosi => {
+            htmlContent += `<div class="vuosi-box">`;
+            htmlContent += `<div class="vuosi-otsikko">${vuosi}</div>`;
+            htmlContent += `<div class="kuukaudet-grid">`;
+
+            for (let kk = 0; kk < 12; kk++) {
+                let tulos = luoKuuTaulukkoJaPyhat(vuosi, kk);
+                htmlContent += `<div class="kuukausi">`;
+                htmlContent += `<div class="kuukausi-nimi">${kuukaudetNimet[kk]}</div>`;
+                htmlContent += tulos.taulukko;
+                htmlContent += tulos.pyhat;
+                htmlContent += `</div>`;
+            }
+
+            htmlContent += `</div></div>`;
+        });
+
+        container.innerHTML = htmlContent;
+    }
+
+    renderöiKalenteri();
+</script>
+
+</body>
+</html>
