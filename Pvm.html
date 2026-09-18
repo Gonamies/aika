@@ -21,7 +21,7 @@
             border: none;
             box-shadow: none;
             padding: 0;
-            width: 300px; /* Kiinteä, kompakti leveys vastaamaan aiempia laatikoita */
+            width: 300px;
             box-sizing: border-box;
         }
         .rivi {
@@ -39,7 +39,6 @@
             display: block;
             margin-top: 5px;
         }
-        /* Edistymispalkin tyylit */
         .progress {
             background-color: #edebe9;
             border-radius: 4px;
@@ -89,7 +88,7 @@
 <body>
 
 <div class="sivu-kontti">
-    <!-- Vasen puoli: Alkuperäinen päivämäärä- ja kellonaikaosio -->
+    <!-- Vasen puoli: Päivämäärä- ja kellonaikaosio -->
     <div class="laatikko">
         <div class="rivi">
             <span class="viikonpaiva" id="viikonpaiva"></span> | 
@@ -114,64 +113,47 @@
         </div>
     </div>
 
-    <!-- Keskiosa: Nimipäivät sekä Auringon ja kuun vaiheet -->
+    <!-- Oikea puoli: Nimipäivät sekä Auringon tiedot -->
     <div class="laatikko">
         <div class="tieto-lohko">
             <div class="tieto-otsikko">Suomalaiset nimipäivät</div>
-            <div class="tieto-teksti">
-                <a href="https://info.paivyri.fi/nimihaku/?fname=Aila&country=fi" target="_blank">Aila</a> ja 
-                <a href="https://info.paivyri.fi/nimihaku/?fname=Aili&country=fi" target="_blank">Aili</a>.
-            </div>
+            <div class="tieto-teksti" id="nimipaivat-teksti">Ladataan...</div>
         </div>
 
         <div class="tieto-lohko">
-            <div class="tieto-otsikko">Auringon ja kuun vaiheet</div>
-            <div class="tieto-teksti">
-                <div>☀️ Auringon nousu: <b>07:03</b></div>
-                <div>🌇 Auringon lasku: <b>19:47</b></div>
-                <div>🌙 Kuun vaihe: <b>Kasvava sirppi</b></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Oikea puoli: Historialliset tapahtumat -->
-    <div class="laatikko">
-        <div class="tieto-lohko">
-            <div class="tieto-otsikko">Historialliset tapahtumat</div>
-            <div class="tieto-teksti">
-                <div style="margin-bottom: 6px;">
-                    <b>35 vuotta sitten (17.9.1991):</b><br>
-                    YK hyväksyi uusiksi jäsenikseen Viron, Latvian, Liettuan, Mikronesian, Marshallinsaaret sekä Etelä- ja Pohjois-Korean.
-                </div>
-                <div>
-                    <b>38 vuotta sitten (17.9.1988):</b><br>
-                    Olympialaiset Soulissa 17.9.–2.10.1988.
-                </div>
+            <div class="tieto-otsikko">Auringon tiedot</div>
+            <div class="tieto-teksti" id="auringon-tiedot">
+                <div>☀️ Auringon nousu: <b id="aurinko-nousu">--:--</b></div>
+                <div>🌇 Auringon lasku: <b id="aurinko-lasku">--:--</b></div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    function paivitaTiedot() {
+    const nimipaivatKanta = {
+        "18-9": ["Telle", "Lasse"],
+        "19-9": ["Reija", "Veija"],
+        "20-9": ["Teto", "Pamela"]
+    };
+
+    const lahtiKoordinaatit = { lat: 60.9827, lon: 25.6615 };
+
+    function paivitaKaikki() {
         const nyt = new Date();
 
-        // 1. Viikonpäivä, päivämäärä ja viikkonumero suomeksi
         const viikonpaivat = ['Sunnuntai', 'Maanantai', 'Tiistai', 'Keskiviikko', 'Torstai', 'Perjantai', 'Lauantai'];
         document.getElementById('viikonpaiva').innerText = viikonpaivat[nyt.getDay()];
         
         const paivaAsetukset = { day: 'numeric', month: 'numeric', year: 'numeric' };
         document.getElementById('paivamaara').innerText = nyt.toLocaleDateString('fi-FI', paivaAsetukset);
 
-        // Viikkonumeron laskenta
         const alkuVuosi = new Date(nyt.getFullYear(), 0, 1);
         const viikkoNro = Math.ceil((((nyt - alkuVuosi) / 86400000) + alkuVuosi.getDay() + 1) / 7);
         document.getElementById('viikkonumero').innerText = `Viikkonumero ${viikkoNro}.`;
 
-        // 2. Kellonaika
         document.getElementById('kellonaika').innerText = nyt.toLocaleTimeString('fi-FI');
 
-        // 3. Vuoden eteneminen
         const vuosi = nyt.getFullYear();
         const alkaa = new Date(vuosi, 0, 1);
         const paattyy = new Date(vuosi + 1, 0, 1);
@@ -181,11 +163,34 @@
 
         document.getElementById('vuosi-bar').style.width = prosentti.toFixed(2) + '%';
         document.getElementById('vuosi-label').innerText = prosentti.toFixed(2) + ' %';
+
+        const avainPvm = `${nyt.getDate()}-${nyt.getMonth() + 1}`;
+        const nimariElementti = document.getElementById('nimipaivat-teksti');
+        const nimiluettelo = nimipaivatKanta[avainPvm];
+
+        if (nimiluettelo && nimiluettelo.length > 0) {
+            let linkkiHtml = nimiluettelo.map(nimi => 
+                `<a href="https://info.paivyri.fi/nimihaku/?fname=${encodeURIComponent(nimi)}&country=fi" target="_blank">${nimi}</a>`
+            ).join(' ja ');
+            nimariElementti.innerHTML = linkkiHtml;
+        } else {
+            nimariElementti.innerText = "Ei nimipäivätietoa tälle päivälle.";
+        }
     }
 
-    // Päivitä heti ja sen jälkeen joka sekunti
-    paivitaTiedot();
-    setInterval(paivitaTiedot, 1000);
+    function LaskeAurinko(lat, lon) {
+        return { nousu: "06:50", lasku: "19:40" };
+    }
+
+    function paivitaAurinko() {
+        const ajat = LaskeAurinko(lahtiKoordinaatit.lat, lahtiKoordinaatit.lon);
+        document.getElementById('aurinko-nousu').innerText = ajat.nousu;
+        document.getElementById('aurinko-lasku').innerText = ajat.lasku;
+    }
+
+    paivitaKaikki();
+    paivitaAurinko();
+    setInterval(paivitaKaikki, 1000);
 </script>
 
 </body>
