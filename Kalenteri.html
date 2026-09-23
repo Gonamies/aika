@@ -72,7 +72,7 @@
             text-align: left !important;
 			font-weight: bold;
             padding-left: 3px;
-			width: 11px; /* Kokeile tarvittaessa pienempää tai isompaa arvoa (esim. 18px - 25px) */
+			width: 11px;
         }
 
         .pyha {
@@ -87,11 +87,11 @@
             line-height: 1.5;
             color: #333;
             min-height: 24px;
-            margin-left: 3px; /* Sijoittuu samaan linjaan viikkonumeroiden kanssa */
-            text-align: left;  /* Pakottaa pyhälistauksen vasemmalle */
+            margin-left: 3px;
+            text-align: left;
         }
 
-        /* TULOSTUSASETUKSET: Nollaa zoomauksen tulostukseen, jotta A4 pysyy täydellisenä */
+        /* TULOSTUSASETUKSET */
         @media print {
             @page {
                 size: A4 landscape;
@@ -99,7 +99,6 @@
             }
             body {
                 padding: 5px;
-				/* Pakottaa selaimen tulostamaan värit täsmälleen niin kuin ne on määritelty */
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;				
             }
@@ -107,9 +106,8 @@
                 zoom: 1 !important;
                 width: 100% !important;
             }
-            /* Varmistetaan, että muu-kuu säilyy vaaleana myös paperilla */
             .muu-kuu {
-                color: #aaa !important; /* Voit kokeilla vielä vaaleampaa, esim. #e0e0e0 */
+                color: #aaa !important;
             }
         }
     </style>
@@ -186,7 +184,11 @@
 
         if (kk === 5 && p >= 19 && p <= 25 && pv === 5) return "Juhannusaatto";
         if (kk === 5 && p >= 20 && p <= 26 && pv === 6) return "Juhannuspäivä";
-        if (kk === 10 && p >= 1 && p <= 7 && pv === 6) return "Pyhäinpäivä";
+        
+        // Korjattu pyhäinpäivän tarkistus: voi olla lokakuun viimeinen päivä (31.10.) tai marraskuun 1.-6. päivä
+        if ((kk === 9 && p === 31 && pv === 6) || (kk === 10 && p >= 1 && p <= 6 && pv === 6)) {
+            return "Pyhäinpäivä";
+        }
 
         return null;
     }
