@@ -2,7 +2,7 @@
 <html lang="fi">
 <head>
     <meta charset="UTF-8">
-    <title>Dynaaminen vuosikalenteri pyhilla</title>
+    <title>Dynaaminen vuosikalenteri 1.2.0</title>
     <style>
         /* Perusasetukset ruudulle */
         body {
@@ -78,8 +78,12 @@
         .pyha {
             color: red;
         }
-        .muu-kuu {
-            color: #aaa;
+        .erityispaiva {
+            color: blue;
+        }
+        .kuluva-paiva {
+            background-color: #00B050 !important;
+            font-weight: bold;
         }
         .pyha-lista {
             margin-top: 10px;
@@ -108,6 +112,16 @@
             }
             .muu-kuu {
                 color: #aaa !important;
+            }
+            .kuluva-paiva {
+                background-color: #c8e6c9 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .erityispaiva {
+                color: blue !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
         }
     </style>
@@ -153,6 +167,39 @@
         return viikkoNro;
     }
 
+    function haeViimeinenSunnuntai(vuosi, kk) {
+        let d = new Date(vuosi, kk + 1, 0);
+        let p = d.getDate();
+        while (p > 0) {
+            let testD = new Date(vuosi, kk, p);
+            if (testD.getDay() === 0) {
+                return p;
+            }
+            p--;
+        }
+        return null;
+    }
+
+    function haeErityispaivanNimi(pvm) {
+        const v = pvm.getFullYear();
+        const kk = pvm.getMonth();
+        const p = pvm.getDate();
+
+        // Maaliskuun viimeinen sunnuntai (kesäaikaan siirtyminen)
+        if (kk === 2) {
+            const viimSunnuntai = haeViimeinenSunnuntai(v, 2);
+            if (p === viimSunnuntai) return "Kesäaikaan siirtyminen";
+        }
+
+        // Lokakuun viimeinen sunnuntai (normaaliaikaan siirtyminen)
+        if (kk === 9) {
+            const viimSunnuntai = haeViimeinenSunnuntai(v, 9);
+            if (p === viimSunnuntai) return "Normaaliaikaan siirtyminen";
+        }
+
+        return null;
+    }
+
     function haePyhanNimi(pvm) {
         const v = pvm.getFullYear();
         const kk = pvm.getMonth(); 
@@ -185,7 +232,6 @@
         if (kk === 5 && p >= 19 && p <= 25 && pv === 5) return "Juhannusaatto";
         if (kk === 5 && p >= 20 && p <= 26 && pv === 6) return "Juhannuspäivä";
         
-        // Korjattu pyhäinpäivän tarkistus: voi olla lokakuun viimeinen päivä (31.10.) tai marraskuun 1.-6. päivä
         if ((kk === 9 && p === 31 && pv === 6) || (kk === 10 && p >= 1 && p <= 6 && pv === 6)) {
             return "Pyhäinpäivä";
         }
@@ -232,36 +278,55 @@
 
             for (let j = 0; j < 7; j++) {
                 let solunTeksti = "";
-                let luokka = "";
+                let luokat = [];
                 let pvmObj;
 
                 if (i === 0 && j < aloitusPaiva) {
                     let pvn = edellisenVika - (aloitusPaiva - 1 - j);
                     solunTeksti = pvn;
-                    luokka = "muu-kuu";
+                    luokat.push("muu-kuu");
                 } else if (paivaLaskuri <= vikaPaiva.getDate()) {
                     pvmObj = new Date(vuosi, kkIndex, paivaLaskuri);
                     solunTeksti = paivaLaskuri;
                     
                     let pyhanNimi = haePyhanNimi(pvmObj);
+                    let erityisNimi = haeErityispaivanNimi(pvmObj);
+
                     if (pyhanNimi !== null) {
                         let pvStr = pvLyhenteet[pvmObj.getDay()];
                         let pvaStr = String(pvmObj.getDate()).padStart(2, '0');
-                        pyhatRivit.push(`${viikkoNroStr} - ${pvStr} ${pvaStr} - ${pyhanNimi}`);
+                        pyhatRivit.push(`<span style="color: red;">${viikkoNroStr} - ${pvStr} ${pvaStr} - ${pyhanNimi}</span>`);
                     }
 
-                    if (onkoPyha(pvmObj)) {
-                        luokka = "pyha";
+                    if (erityisNimi !== null) {
+                        let pvStr = pvLyhenteet[pvmObj.getDay()];
+                        let pvaStr = String(pvmObj.getDate()).padStart(2, '0');
+                        pyhatRivit.push(`<span style="color: blue;">${viikkoNroStr} - ${pvStr} ${pvaStr} - ${erityisNimi}</span>`);
                     }
+
+                    if (erityisNimi !== null) {
+                        luokat.push("erityispaiva");
+                    } else if (onkoPyha(pvmObj)) {
+                        luokat.push("pyha");
+                    }
+
+                    // Tarkistus onko kuluva päivä
+                    const nyt = new Date();
+                    if (pvmObj.getFullYear() === nyt.getFullYear() && 
+                        pvmObj.getMonth() === nyt.getMonth() && 
+                        pvmObj.getDate() === nyt.getDate()) {
+                        luokat.push("kuluva-paiva");
+                    }
+
                     paivaLaskuri++;
                 } else {
                     let pvn = paivaLaskuri - vikaPaiva.getDate();
                     solunTeksti = pvn;
-                    luokka = "muu-kuu";
+                    luokat.push("muu-kuu");
                     paivaLaskuri++;
                 }
 
-                html += `<td class="${luokka}">${solunTeksti}</td>`;
+                html += `<td class="${luokat.join(' ')}">${solunTeksti}</td>`;
             }
             html += `</tr>`;
         }
