@@ -2,7 +2,7 @@
 <html lang="fi">
 <head>
     <meta charset="UTF-8">
-    <title>Dynaaminen vuosikalenteri 1.2.0</title>
+    <title>Dynaaminen vuosikalenteri v1.3.2</title>
     <style>
         /* Perusasetukset ruudulle */
         body {
@@ -11,6 +11,14 @@
             color: #000000;
             margin: 0;
             padding: 10px;
+        }
+
+        .versionumero {
+            text-align: right;
+            font-size: 11px;
+            color: #666;
+            margin-right: 15px;
+            margin-bottom: 5px;
         }
 
         .kalenteri-container {
@@ -81,9 +89,15 @@
         .erityispaiva {
             color: blue;
         }
+        .projekti-paiva {
+            background-color: #f5964e !important;
+        }
         .kuluva-paiva {
             background-color: #00B050 !important;
             font-weight: bold;
+        }
+        .muu-kuu {
+            color: #aaa;
         }
         .pyha-lista {
             margin-top: 10px;
@@ -114,7 +128,12 @@
                 color: #aaa !important;
             }
             .kuluva-paiva {
-                background-color: #c8e6c9 !important;
+                background-color: #00B050 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .projekti-paiva {
+                background-color: #f5964e !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
@@ -128,11 +147,19 @@
 </head>
 <body>
 
+<div class="versionumero">Versio 1.3.2</div>
 <div class="kalenteri-container" id="kalenteriContainer">
     <!-- Kalenteri generoituu dynaamisesti JavaScriptillä -->
 </div>
 
 <script>
+    const projektit = [
+        { nimi: "337 Pilkko", alku: new Date(2026, 9, 6), loppu: new Date(2026, 9, 17) },
+        { nimi: "338 Oulu", alku: new Date(2026, 9, 20), loppu: new Date(2026, 9, 31) },
+        { nimi: "339 Höylä", alku: new Date(2026, 10, 10), loppu: new Date(2026, 10, 21) },
+        { nimi: "313 Helsinki", alku: new Date(2026, 10, 24), loppu: new Date(2026, 11, 5) }
+    ];
+
     const kuukaudetNimet = [
         "Tammikuu", "Helmikuu", "Maaliskuu", "Huhtikuu", "Toukokuu", "Kesäkuu",
         "Heinäkuu", "Elokuu", "Syyskuu", "Lokakuu", "Marraskuu", "Joulukuu"
@@ -140,6 +167,7 @@
 
     const viikonPaivat = ["Vk", "MA", "TI", "KE", "TO", "PE", "LA", "SU"];
     const pvLyhenteet = ["su", "ma", "ti", "ke", "to", "pe", "la"];
+    const pvNimetIso = ["Su", "Ma", "Ti", "Ke", "To", "Pe", "La"];
 
     function haePaasiainen(vuosi) {
         const a = vuosi % 19;
@@ -185,13 +213,11 @@
         const kk = pvm.getMonth();
         const p = pvm.getDate();
 
-        // Maaliskuun viimeinen sunnuntai (kesäaikaan siirtyminen)
         if (kk === 2) {
             const viimSunnuntai = haeViimeinenSunnuntai(v, 2);
             if (p === viimSunnuntai) return "Kesäaikaan siirtyminen";
         }
 
-        // Lokakuun viimeinen sunnuntai (normaaliaikaan siirtyminen)
         if (kk === 9) {
             const viimSunnuntai = haeViimeinenSunnuntai(v, 9);
             if (p === viimSunnuntai) return "Normaaliaikaan siirtyminen";
@@ -244,6 +270,26 @@
         return haePyhanNimi(pvm) !== null;
     }
 
+    function haeAktiivinenProjekti(pvm) {
+        const tTime = new Date(pvm.getFullYear(), pvm.getMonth(), pvm.getDate()).getTime();
+        for (let proj of projektit) {
+            const alkuTime = new Date(proj.alku.getFullYear(), proj.alku.getMonth(), proj.alku.getDate()).getTime();
+            const loppuTime = new Date(proj.loppu.getFullYear(), proj.loppu.getMonth(), proj.loppu.getDate()).getTime();
+            if (tTime >= alkuTime && tTime <= loppuTime) {
+                return proj.nimi;
+            }
+        }
+        return null;
+    }
+
+    function muotoilePvmLyhyt(d) {
+        const pvNimi = pvNimetIso[d.getDay()];
+        const p = String(d.getDate()).padStart(1, ' ');
+        const kk = d.getMonth() + 1;
+        const v = String(d.getFullYear()).slice(-2);
+        return `${pvNimi} ${p}.${kk}.${v}`;
+    }
+
     function luoKuuTaulukkoJaPyhat(vuosi, kkIndex) {
         const ekaPaiva = new Date(vuosi, kkIndex, 1);
         const vikaPaiva = new Date(vuosi, kkIndex + 1, 0);
@@ -259,7 +305,10 @@
 
         let paivaLaskuri = 1;
         let edellisenVika = new Date(vuosi, kkIndex, 0).getDate();
-        let pyhatRivit = [];
+        
+        let punaisetRivit = [];
+        let sinisetRivit = [];
+        let projektitRivit = [];
         
         for (let i = 0; i < 6; i++) {
             if (paivaLaskuri > vikaPaiva.getDate() && i > 0) break;
@@ -291,17 +340,33 @@
                     
                     let pyhanNimi = haePyhanNimi(pvmObj);
                     let erityisNimi = haeErityispaivanNimi(pvmObj);
+                    let projektiNimi = haeAktiivinenProjekti(pvmObj);
 
+                    let pvStr = pvLyhenteet[pvmObj.getDay()];
+                    let pvaStr = String(pvmObj.getDate()).padStart(2, '0');
+
+                    // Lisätään listaan vain varsinaiset erikoispyhät (ei tavallisia sunnuntaita)
                     if (pyhanNimi !== null) {
-                        let pvStr = pvLyhenteet[pvmObj.getDay()];
-                        let pvaStr = String(pvmObj.getDate()).padStart(2, '0');
-                        pyhatRivit.push(`<span style="color: red;">${viikkoNroStr} - ${pvStr} ${pvaStr} - ${pyhanNimi}</span>`);
+                        punaisetRivit.push(`<span style="color: red;">${viikkoNroStr} - ${pvStr} ${pvaStr} - ${pyhanNimi}</span>`);
                     }
 
                     if (erityisNimi !== null) {
-                        let pvStr = pvLyhenteet[pvmObj.getDay()];
-                        let pvaStr = String(pvmObj.getDate()).padStart(2, '0');
-                        pyhatRivit.push(`<span style="color: blue;">${viikkoNroStr} - ${pvStr} ${pvaStr} - ${erityisNimi}</span>`);
+                        sinisetRivit.push(`<span style="color: blue;">${viikkoNroStr} - ${pvStr} ${pvaStr} - ${erityisNimi}</span>`);
+                    }
+
+                    if (projektiNimi !== null) {
+                        for (let proj of projektit) {
+                            if (proj.nimi === projektiNimi && 
+                                pvmObj.getFullYear() === proj.alku.getFullYear() &&
+                                pvmObj.getMonth() === proj.alku.getMonth() &&
+                                pvmObj.getDate() === proj.alku.getDate()) {
+                                let alkuMuoto = muotoilePvmLyhyt(proj.alku);
+                                let loppuMuoto = muotoilePvmLyhyt(proj.loppu);
+                                // Muutettu projektin tekstin väri vastaamaan kalenterissa käytettyä projektiväriä (#f5964e)
+                                projektitRivit.push(`<span style="color: #f07416;">${viikkoNroStr} - ${alkuMuoto} - ${proj.nimi}</span>`);
+                            }
+                        }
+                        luokat.push("projekti-paiva");
                     }
 
                     if (erityisNimi !== null) {
@@ -310,11 +375,11 @@
                         luokat.push("pyha");
                     }
 
-                    // Tarkistus onko kuluva päivä
                     const nyt = new Date();
                     if (pvmObj.getFullYear() === nyt.getFullYear() && 
                         pvmObj.getMonth() === nyt.getMonth() && 
                         pvmObj.getDate() === nyt.getDate()) {
+                        luokat = luokat.filter(l => l !== "projekti-paiva" && l !== "pyha");
                         luokat.push("kuluva-paiva");
                     }
 
@@ -332,9 +397,11 @@
         }
         html += `</table>`;
 
+        let kaikkiRivit = [...punaisetRivit, ...sinisetRivit, ...projektitRivit];
+
         let pyhaHtml = `<div class="pyha-lista">`;
-        if (pyhatRivit.length > 0) {
-            pyhaHtml += pyhatRivit.join("<br>");
+        if (kaikkiRivit.length > 0) {
+            pyhaHtml += kaikkiRivit.join("<br>");
         }
         pyhaHtml += `</div>`;
 
